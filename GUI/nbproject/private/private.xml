@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/E:/Downloads/GUI/src/ActionListeners/PokemonStatsUpdater.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/Pokemon.java</file>
+            <file>file:/E:/Downloads/GUI/src/ActionListeners/SliderMouseListener.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/Move.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/Ability.java</file>
+            <file>file:/E:/Downloads/GUI/src/vista/MainWindow.java</file>
+            <file>file:/E:/Downloads/GUI/src/Interface/IPokemonCalculator.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/Nature.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/Item.java</file>
+            <file>file:/E:/Downloads/GUI/src/controlador/PoblarTablas.java</file>
+            <file>file:/E:/Downloads/GUI/src/bd/Conexion.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/PokemonPaste.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/MoveCat.java</file>
+            <file>file:/E:/Downloads/GUI/src/modelo/PokemonType.java</file>
+        </group>
+    </open-files>
+</project-private>
