@@ -14,7 +14,6 @@
       <Connection code="greatTuskIcon.getImage()" type="code"/>
     </Property>
     <Property name="name" type="java.lang.String" value="mainFrame" noResource="true"/>
-    <Property name="resizable" type="boolean" value="false"/>
     <Property name="size" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
       <Dimension value="[1920, 1080]"/>
     </Property>
@@ -45,48 +44,32 @@
                       <Component id="btnProbarConexion" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <EmptySpace min="-2" pref="1340" max="-2" attributes="0"/>
-                              <Component id="lblEVSum" min="-2" pref="38" max="-2" attributes="0"/>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jtpPokemonGeneration" min="-2" pref="1263" max="-2" attributes="0"/>
-                          </Group>
-                      </Group>
-                      <EmptySpace min="-2" pref="382" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jtpPokemonGeneration" min="-2" pref="1263" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
-              <EmptySpace min="325" max="32767" attributes="0"/>
+              <EmptySpace pref="30" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" attributes="0">
+              <EmptySpace min="-2" pref="64" max="-2" attributes="0"/>
+              <Component id="btnProbarConexion" min="-2" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" attributes="0">
-                      <EmptySpace min="-2" pref="1586" max="-2" attributes="0"/>
-                      <Component id="lblEVSum" min="-2" pref="21" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jtpPokemonGeneration" min="-2" pref="778" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
-                      <EmptySpace min="-2" pref="64" max="-2" attributes="0"/>
-                      <Component id="btnProbarConexion" min="-2" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <EmptySpace min="-2" pref="26" max="-2" attributes="0"/>
-                              <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jtpPokemonGeneration" min="-2" pref="778" max="-2" attributes="0"/>
-                          </Group>
-                      </Group>
+                      <EmptySpace min="-2" pref="45" max="-2" attributes="0"/>
+                      <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
-              <EmptySpace max="32767" attributes="0"/>
+              <EmptySpace pref="108" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -106,7 +89,7 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" attributes="0">
                           <EmptySpace min="-2" pref="212" max="-2" attributes="0"/>
-                          <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                          <Component id="lblPokepaste" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <Group type="102" alignment="0" attributes="0">
                           <EmptySpace min="-2" pref="51" max="-2" attributes="0"/>
@@ -121,16 +104,16 @@
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="1" attributes="0">
                   <EmptySpace pref="82" max="32767" attributes="0"/>
-                  <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                  <Component id="lblPokepaste" min="-2" max="-2" attributes="0"/>
                   <EmptySpace min="-2" pref="36" max="-2" attributes="0"/>
                   <Component id="jScrollPane1" min="-2" pref="333" max="-2" attributes="0"/>
-                  <EmptySpace min="-2" pref="81" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="90" max="-2" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
       </Layout>
       <SubComponents>
-        <Component class="javax.swing.JLabel" name="jLabel1">
+        <Component class="javax.swing.JLabel" name="lblPokepaste">
           <Properties>
             <Property name="horizontalAlignment" type="int" value="0"/>
             <Property name="text" type="java.lang.String" value="Pokepaste:"/>
@@ -156,8 +139,6 @@
         </Container>
       </SubComponents>
     </Container>
-    <Component class="javax.swing.JLabel" name="lblEVSum">
-    </Component>
     <Component class="javax.swing.JButton" name="btnProbarConexion">
       <Properties>
         <Property name="text" type="java.lang.String" value="Probar Conexion"/>
@@ -336,7 +317,7 @@
                       <Component id="btnGeneratePokepaste" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="btnResetFields" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="48" max="32767" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="rbnFemale" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="rbnMale" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -651,58 +632,56 @@
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" attributes="0">
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <EmptySpace min="-2" pref="35" max="-2" attributes="0"/>
-                                      <Group type="103" groupAlignment="0" attributes="0">
-                                          <Group type="102" attributes="0">
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="jLabel15" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
-                                                  <Component id="jLabel16" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
-                                              </Group>
-                                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="pgbDEF" linkSize="8" alignment="1" max="-2" attributes="0"/>
-                                                  <Component id="pgbSPATK" linkSize="8" alignment="1" max="-2" attributes="0"/>
-                                              </Group>
-                                              <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="lblSPATK" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
-                                                  <Component id="lblDEF" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
-                                              </Group>
-                                              <EmptySpace max="-2" attributes="0"/>
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="sldSPATK" linkSize="2" alignment="0" min="-2" pref="402" max="-2" attributes="0"/>
-                                                  <Component id="sldDEF" linkSize="2" alignment="0" min="-2" pref="413" max="-2" attributes="0"/>
-                                              </Group>
-                                          </Group>
-                                          <Group type="102" attributes="0">
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="jLabel13" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
-                                                  <Component id="jLabel14" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
-                                              </Group>
-                                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="pgbHP" linkSize="8" alignment="1" min="-2" max="-2" attributes="0"/>
-                                                  <Component id="pgbATK" linkSize="8" alignment="1" max="-2" attributes="0"/>
-                                              </Group>
-                                              <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="lblHP" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
-                                                  <Component id="lblATK" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
-                                              </Group>
-                                              <EmptySpace max="-2" attributes="0"/>
-                                              <Group type="103" groupAlignment="0" attributes="0">
-                                                  <Component id="sldHP" linkSize="2" alignment="1" min="-2" pref="402" max="-2" attributes="0"/>
-                                                  <Component id="sldATK" linkSize="2" alignment="1" max="-2" attributes="0"/>
-                                              </Group>
-                                          </Group>
-                                      </Group>
+                      <EmptySpace min="-2" pref="35" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="1" attributes="0">
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Group type="102" attributes="0">
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="jLabel15" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      <Component id="jLabel16" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
                                   </Group>
-                                  <Group type="102" alignment="1" attributes="0">
-                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="pgbDEF" linkSize="8" alignment="1" max="-2" attributes="0"/>
+                                      <Component id="pgbSPATK" linkSize="8" alignment="1" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="lblSPATK" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
+                                      <Component id="lblDEF" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="sldSPATK" linkSize="2" alignment="0" min="-2" pref="402" max="-2" attributes="0"/>
+                                      <Component id="sldDEF" linkSize="2" alignment="0" min="-2" pref="413" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                              <Group type="102" attributes="0">
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="jLabel13" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      <Component id="jLabel14" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="pgbHP" linkSize="8" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      <Component id="pgbATK" linkSize="8" alignment="1" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="lblHP" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
+                                      <Component id="lblATK" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
+                                      <Component id="jLabel9" linkSize="12" alignment="1" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="sldHP" linkSize="2" alignment="1" min="-2" pref="402" max="-2" attributes="0"/>
+                                      <Component id="sldATK" linkSize="2" alignment="1" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                          </Group>
+                          <Group type="102" alignment="1" attributes="0">
+                              <Group type="103" groupAlignment="1" attributes="0">
+                                  <Group type="102" attributes="0">
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="jLabel17" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
                                           <Component id="jLabel18" linkSize="10" alignment="1" min="-2" max="-2" attributes="0"/>
@@ -713,6 +692,15 @@
                                           <Component id="pgbSPD" linkSize="8" alignment="1" max="-2" attributes="0"/>
                                       </Group>
                                       <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <Component id="jLabel21" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="lblEVSum" min="-2" pref="38" max="-2" attributes="0"/>
+                                  <Group type="102" attributes="0">
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="lblSPD" linkSize="12" alignment="1" min="-2" pref="41" max="-2" attributes="0"/>
                                           <Component id="lblSPDEF" linkSize="12" alignment="1" min="-2" pref="40" max="-2" attributes="0"/>
@@ -724,146 +712,155 @@
                                       </Group>
                                   </Group>
                               </Group>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                          </Group>
+                      </Group>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" attributes="0">
+                              <EmptySpace max="32767" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="spnIVHP" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
-                                  <Component id="spnIVATK" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
-                                  <Component id="spnIVDEF" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
-                                  <Component id="spnIVSPATK" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
-                                  <Component id="spnIVSPDEF" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
-                                  <Component id="spnIVSPD" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" alignment="0" attributes="0">
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="spnIVHP" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
+                                          <Component id="spnIVATK" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
+                                          <Component id="spnIVDEF" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
+                                          <Component id="spnIVSPATK" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace type="separate" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="lblFinalSPATK" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
                                           <Component id="lblFinalDEF" linkSize="6" alignment="0" min="-2" pref="85" max="-2" attributes="0"/>
                                           <Component id="lblFinalATK" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
                                           <Component id="lblFinalHP" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
                                       </Group>
-                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                                   </Group>
-                                  <Group type="103" alignment="1" groupAlignment="0" attributes="0">
-                                      <Component id="lblFinalSPDEF" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
-                                      <Component id="lblFinalSPD" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="spnIVSPDEF" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
+                                          <Component id="spnIVSPD" linkSize="4" alignment="0" min="-2" pref="74" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="lblFinalSPDEF" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                                          <Component id="lblFinalSPD" linkSize="6" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
+                                      </Group>
                                   </Group>
                               </Group>
+                              <EmptySpace pref="209" max="32767" attributes="0"/>
                           </Group>
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <EmptySpace min="-2" pref="340" max="-2" attributes="0"/>
-                                      <Component id="jLabel9" linkSize="12" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Group type="102" attributes="0">
-                                      <EmptySpace min="819" pref="819" max="-2" attributes="0"/>
-                                      <Component id="jLabel19" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                              </Group>
-                              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                          <Group type="102" alignment="1" attributes="0">
+                              <EmptySpace pref="35" max="32767" attributes="0"/>
+                              <Component id="jLabel19" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="359" max="-2" attributes="0"/>
                           </Group>
                       </Group>
-                      <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
             <DimensionLayout dim="1">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" attributes="0">
-                      <EmptySpace min="-2" pref="50" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabel9" linkSize="13" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jLabel19" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace min="-2" pref="43" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="spnIVHP" linkSize="5" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                          <Component id="sldHP" linkSize="3" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                          <Component id="lblFinalHP" linkSize="7" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                          <Group type="103" alignment="1" groupAlignment="3" attributes="0">
-                              <Component id="pgbHP" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="jLabel13" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                          </Group>
-                          <Component id="lblHP" linkSize="13" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                  <Group type="102" alignment="0" attributes="0">
+                      <EmptySpace min="-2" pref="66" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="1" attributes="0">
-                          <Group type="103" alignment="1" groupAlignment="0" attributes="0">
-                              <Component id="lblATK" linkSize="13" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="sldATK" linkSize="3" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="spnIVATK" linkSize="5" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="lblFinalATK" linkSize="7" min="-2" pref="46" max="-2" attributes="0"/>
-                          </Group>
-                          <Group type="103" alignment="1" groupAlignment="3" attributes="0">
-                              <Component id="pgbATK" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="jLabel14" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                          </Group>
-                      </Group>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="lblDEF" linkSize="13" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
-                          <Group type="102" alignment="1" attributes="0">
-                              <EmptySpace pref="5" max="-2" attributes="0"/>
+                          <Component id="jLabel21" min="-2" max="-2" attributes="0"/>
+                          <Group type="102" attributes="0">
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabel19" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel9" linkSize="13" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace min="-2" pref="27" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="spnIVHP" linkSize="5" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
+                                  <Component id="sldHP" linkSize="3" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
+                                  <Component id="lblFinalHP" linkSize="7" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
                                   <Group type="103" alignment="1" groupAlignment="3" attributes="0">
-                                      <Component id="pgbDEF" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                                      <Component id="jLabel15" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="pgbHP" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="jLabel13" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
                                   </Group>
-                                  <Group type="103" alignment="1" groupAlignment="0" attributes="0">
-                                      <Component id="sldDEF" linkSize="3" min="-2" pref="46" max="-2" attributes="0"/>
-                                      <Component id="lblFinalDEF" linkSize="7" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
-                                      <Component id="spnIVDEF" linkSize="5" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
-                                  </Group>
+                                  <Component id="lblHP" linkSize="13" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
                               </Group>
-                          </Group>
-                      </Group>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="103" alignment="0" groupAlignment="0" attributes="0">
-                              <Group type="103" alignment="0" groupAlignment="0" attributes="0">
-                                  <Component id="sldSPATK" linkSize="3" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                                  <Component id="lblSPATK" linkSize="13" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                              </Group>
-                              <Component id="spnIVSPATK" linkSize="5" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="lblFinalSPATK" linkSize="7" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                          </Group>
-                          <Component id="jLabel16" linkSize="11" max="32767" attributes="0"/>
-                          <Component id="pgbSPATK" linkSize="9" min="-2" pref="46" max="-2" attributes="0"/>
-                      </Group>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="103" alignment="0" groupAlignment="3" attributes="0">
-                              <Component id="jLabel17" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                              <Component id="pgbSPDEF" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace min="8" pref="8" max="-2" attributes="0"/>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="1" attributes="0">
-                                  <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
-                                      <Group type="102" alignment="0" attributes="0">
-                                          <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
-                                          <Component id="lblFinalSPDEF" linkSize="7" min="-2" pref="46" max="-2" attributes="0"/>
-                                      </Group>
-                                      <Component id="lblSPDEF" linkSize="13" min="-2" pref="54" max="-2" attributes="0"/>
+                                  <Group type="103" alignment="1" groupAlignment="0" attributes="0">
+                                      <Component id="lblATK" linkSize="13" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="sldATK" linkSize="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="spnIVATK" linkSize="5" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="lblFinalATK" linkSize="7" min="-2" pref="46" max="-2" attributes="0"/>
                                   </Group>
-                                  <Group type="102" alignment="1" attributes="0">
-                                      <Component id="spnIVSPDEF" linkSize="5" min="-2" pref="46" max="-2" attributes="0"/>
-                                      <EmptySpace min="8" pref="8" max="-2" attributes="0"/>
+                                  <Group type="103" alignment="1" groupAlignment="3" attributes="0">
+                                      <Component id="pgbATK" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="jLabel14" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
                                   </Group>
-                                  <Component id="sldSPDEF" linkSize="3" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
                               </Group>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="lblDEF" linkSize="13" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <EmptySpace pref="5" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Group type="103" alignment="1" groupAlignment="3" attributes="0">
+                                              <Component id="pgbDEF" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                              <Component id="jLabel15" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Group type="103" alignment="1" groupAlignment="0" attributes="0">
+                                              <Component id="sldDEF" linkSize="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                              <Component id="lblFinalDEF" linkSize="7" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
+                                              <Component id="spnIVDEF" linkSize="5" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
+                                          </Group>
+                                      </Group>
+                                  </Group>
+                              </Group>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="103" alignment="0" groupAlignment="0" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="0" attributes="0">
+                                          <Component id="sldSPATK" linkSize="3" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
+                                          <Component id="lblSPATK" linkSize="13" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="spnIVSPATK" linkSize="5" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="lblFinalSPATK" linkSize="7" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Component id="jLabel16" linkSize="11" max="32767" attributes="0"/>
+                                  <Component id="pgbSPATK" linkSize="9" min="-2" pref="46" max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="103" alignment="0" groupAlignment="3" attributes="0">
+                                      <Component id="jLabel17" linkSize="11" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="pgbSPDEF" linkSize="9" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <EmptySpace min="8" pref="8" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="1" attributes="0">
+                                          <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
+                                              <Group type="102" alignment="0" attributes="0">
+                                                  <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
+                                                  <Component id="lblFinalSPDEF" linkSize="7" min="-2" pref="46" max="-2" attributes="0"/>
+                                              </Group>
+                                              <Component id="lblSPDEF" linkSize="13" min="-2" pref="54" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Group type="102" alignment="1" attributes="0">
+                                              <Component id="spnIVSPDEF" linkSize="5" min="-2" pref="46" max="-2" attributes="0"/>
+                                              <EmptySpace min="8" pref="8" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Component id="sldSPDEF" linkSize="3" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
+                                      </Group>
+                                  </Group>
+                              </Group>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                  <Component id="lblFinalSPD" linkSize="7" alignment="1" max="32767" attributes="0"/>
+                                  <Group type="103" alignment="1" groupAlignment="3" attributes="0">
+                                      <Component id="sldSPD" linkSize="3" alignment="3" min="-2" pref="46" max="-2" attributes="0"/>
+                                      <Component id="spnIVSPD" linkSize="5" alignment="3" max="32767" attributes="0"/>
+                                  </Group>
+                                  <Component id="lblSPD" linkSize="13" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="jLabel18" linkSize="11" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="pgbSPD" linkSize="9" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                              <Component id="lblEVSum" min="-2" pref="21" max="-2" attributes="0"/>
                           </Group>
                       </Group>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Component id="lblFinalSPD" linkSize="7" alignment="1" max="32767" attributes="0"/>
-                          <Component id="sldSPD" linkSize="3" alignment="1" min="-2" pref="46" max="-2" attributes="0"/>
-                          <Component id="lblSPD" linkSize="13" alignment="0" max="32767" attributes="0"/>
-                          <Component id="spnIVSPD" linkSize="5" alignment="1" max="32767" attributes="0"/>
-                          <Component id="jLabel18" linkSize="11" alignment="0" max="32767" attributes="0"/>
-                          <Component id="pgbSPD" linkSize="9" alignment="0" min="-2" pref="46" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace pref="186" max="32767" attributes="0"/>
+                      <EmptySpace pref="120" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1081,6 +1078,16 @@
             <Component class="javax.swing.JSpinner" name="spnIVSPDEF">
             </Component>
             <Component class="javax.swing.JSpinner" name="spnIVSPD">
+            </Component>
+            <Component class="javax.swing.JLabel" name="lblEVSum">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="508"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="jLabel21">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Remaining EVs:"/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>
