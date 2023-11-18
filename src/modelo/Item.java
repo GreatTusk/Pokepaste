@@ -20,10 +20,18 @@ public class Item {
         this.id = 0;
     }
 
-    public Item(int id, String description) {
+    public Item(int id, String name) {
         this.id = id;
-        this.description = description;
+        this.name = name;
     }
+
+    
+
+    public Item(int id) {
+        this.id = id;
+    }
+    
+    
 
     public int getId() {
         return id;

@@ -25,6 +25,10 @@ public class Gender {
         this.name = name;
     }
 
+    public Gender(int id) {
+        this.id = id;
+    }
+
     public int getId() {
         return id;
     }

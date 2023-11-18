@@ -21,6 +21,12 @@ public class PokemonType   {
         this.name = name;
     }
 
+    public PokemonType(int id) {
+        this.id = id;
+    }
+    
+    
+
     public int getId() {
         return id;
     }

@@ -25,9 +25,12 @@ public class Pokemon {
     public Pokemon() {
     }
 
-    public Pokemon(Integer id) {
-        this.id = 0;
+    public Pokemon(int id, String name) {
+        this.id = id;
+        this.name = name;
     }
+
+    
 
     public Pokemon(Integer id, String name, int hp, int atk, int def, int spatk, int spdef, int spd, int bst) {
         this.id = id;

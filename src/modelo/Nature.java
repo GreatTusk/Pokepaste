@@ -25,6 +25,12 @@ public class Nature   {
         this.name = name;
     }
 
+    public Nature(int id) {
+        this.id = id;
+    }
+    
+    
+
     public int getId() {
         return id;
     }

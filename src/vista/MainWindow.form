@@ -181,12 +181,13 @@
                               <EmptySpace pref="719" max="32767" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="ckbShiny" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="btnSavePokepaste" min="-2" pref="170" max="-2" attributes="0"/>
                                   <Component id="btnImportPaste" min="-2" pref="171" max="-2" attributes="0"/>
                                   <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
                                       <Component id="btnResetFields" alignment="0" max="32767" attributes="0"/>
                                       <Component id="btnGeneratePokepaste" alignment="0" max="32767" attributes="0"/>
                                   </Group>
+                                  <Component id="btnSavePokepaste" alignment="0" min="-2" pref="170" max="-2" attributes="0"/>
+                                  <Component id="btnUpdatePokepaste" alignment="0" min="-2" pref="170" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace min="-2" pref="64" max="-2" attributes="0"/>
                           </Group>
@@ -317,7 +318,9 @@
                       <Component id="btnGeneratePokepaste" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="btnResetFields" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                      <Component id="btnUpdatePokepaste" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="7" max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="rbnFemale" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="rbnMale" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -603,6 +606,14 @@
               </Events>
             </Component>
             <Component class="javax.swing.JLabel" name="lblPokemonSprite">
+            </Component>
+            <Component class="javax.swing.JButton" name="btnUpdatePokepaste">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Update Pokepaste"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnUpdatePokepasteActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>
@@ -1111,6 +1122,8 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace min="-2" pref="24" max="-2" attributes="0"/>
                       <Component id="btnConsultar" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="40" max="-2" attributes="0"/>
+                      <Component id="btnUpdateRow" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
                   </Group>
                   <Component id="jScrollPane2" alignment="0" pref="1263" max="32767" attributes="0"/>
@@ -1120,7 +1133,10 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
-                      <Component id="btnConsultar" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="btnConsultar" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="btnUpdateRow" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                       <EmptySpace min="-2" pref="32" max="-2" attributes="0"/>
                       <Component id="jScrollPane2" min="-2" pref="489" max="-2" attributes="0"/>
                       <EmptySpace pref="159" max="32767" attributes="0"/>
@@ -1164,6 +1180,14 @@
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnConsultarActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JButton" name="btnUpdateRow">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Actualizar registro"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnUpdateRowActionPerformed"/>
               </Events>
             </Component>
           </SubComponents>

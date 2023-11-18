@@ -23,6 +23,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import modelo.Ability;
 import modelo.Item;
 import modelo.Move;
@@ -45,7 +48,9 @@ import oracle.jdbc.OracleConnection;
  */
 public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator {
     
+    private int toUpdatePkmnId;
     private String emptyString = "";
+    private boolean updateFlag = false;
     private Gender gender = new Gender(3, "Genderless");
     private ArrayList<Item> listaItems;
     private ArrayList<Pokemon> listaPokemon;
@@ -182,6 +187,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         btnItemDesc = new javax.swing.JButton();
         btnResetFields = new javax.swing.JButton();
         lblPokemonSprite = new javax.swing.JLabel();
+        btnUpdatePokepaste = new javax.swing.JButton();
         jPanel4 = new javax.swing.JPanel();
         lblDEF = new javax.swing.JLabel();
         lblSPDEF = new javax.swing.JLabel();
@@ -227,6 +233,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         jScrollPane2 = new javax.swing.JScrollPane();
         tblPokemon = new javax.swing.JTable();
         btnConsultar = new javax.swing.JButton();
+        btnUpdateRow = new javax.swing.JButton();
         jPanel5 = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         tblMoves = new javax.swing.JTable();
@@ -433,6 +440,13 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             }
         });
 
+        btnUpdatePokepaste.setText("Update Pokepaste");
+        btnUpdatePokepaste.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUpdatePokepasteActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -450,11 +464,12 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 719, Short.MAX_VALUE)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(ckbShiny)
-                            .addComponent(btnSavePokepaste, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(btnImportPaste, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                                 .addComponent(btnResetFields, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnGeneratePokepaste, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addComponent(btnGeneratePokepaste, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(btnSavePokepaste, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnUpdatePokepaste, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(64, 64, 64))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -560,7 +575,9 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
                 .addComponent(btnGeneratePokepaste)
                 .addGap(18, 18, 18)
                 .addComponent(btnResetFields)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(btnUpdatePokepaste)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 7, Short.MAX_VALUE)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(rbnFemale)
                     .addComponent(rbnMale)
@@ -901,6 +918,13 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             }
         });
 
+        btnUpdateRow.setText("Actualizar registro");
+        btnUpdateRow.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUpdateRowActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -908,6 +932,8 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(24, 24, 24)
                 .addComponent(btnConsultar)
+                .addGap(40, 40, 40)
+                .addComponent(btnUpdateRow)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 1263, Short.MAX_VALUE)
         );
@@ -915,7 +941,9 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                 .addGap(30, 30, 30)
-                .addComponent(btnConsultar)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnConsultar)
+                    .addComponent(btnUpdateRow))
                 .addGap(32, 32, 32)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 489, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(159, Short.MAX_VALUE))
@@ -1090,14 +1118,16 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
 
     private void btnSavePokepasteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSavePokepasteActionPerformed
         // TODO add your handling code here:
+        
         PokemonPaste buildPokepaste = buildPokepaste();
         try (Connection connection = Conexion.getInstance().getConnection()) {
+            
             if(ip.insertPokepaste(connection, buildPokepaste)){
                 System.out.println("Insertado correctamente");
             } else {
                 System.out.println("Inserción fallada");
             }
-            Conexion.getInstance().releaseConnection(connection);
+            //Conexion.getInstance().releaseConnection(connection);
             // Use the itemList as needed
         } catch (SQLException e) {
             System.out.println(e);
@@ -1170,6 +1200,49 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         setFinalStatLabels();
     }//GEN-LAST:event_cboNatureItemStateChanged
 
+    private void btnUpdateRowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateRowActionPerformed
+        // TODO add your handling code here:
+        // se consigue la id del pokemon en pokemon_pokepaste
+
+        toUpdatePkmnId = getSelectedRowFromPokepaste();
+
+        try (Connection connection = Conexion.getInstance().getConnection()) {
+            // crear objeto pokepaste desde los datos de la base de datos
+            PokemonPaste p = ip.getPokepasteAtId(connection, toUpdatePkmnId);
+            // crear texto pokepaste a partir del objeto pokepaste anterior
+            String pokepaste = generatePokepaste(p);
+            // imprimir al textfield
+            txtPokepaste.setText(pokepaste);
+            // resetear todo
+            resetFields();
+            // set valores del pokepaste en los componentes del programa
+            importPokepaste(pokepaste);
+            btnSavePokepaste.setVisible(false);
+
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+
+    }//GEN-LAST:event_btnUpdateRowActionPerformed
+
+    private void btnUpdatePokepasteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdatePokepasteActionPerformed
+        // TODO add your handling code here:
+        PokemonPaste p = buildPokepaste();
+        try (Connection connection = Conexion.getInstance().getConnection()) {
+            if(ip.updatePokepaste(connection, p, toUpdatePkmnId)){
+                System.out.println("Actualizado correctamente");
+            } else {
+                System.out.println("Update fallido");
+            }
+            btnSavePokepaste.setVisible(true);
+            //Conexion.getInstance().releaseConnection(connection);
+            // Use the itemList as needed
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        
+    }//GEN-LAST:event_btnUpdatePokepasteActionPerformed
+
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup bgpGender;
@@ -1185,6 +1258,8 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
     private javax.swing.JButton btnProbarConexion;
     private javax.swing.JButton btnResetFields;
     private javax.swing.JButton btnSavePokepaste;
+    private javax.swing.JButton btnUpdatePokepaste;
+    private javax.swing.JButton btnUpdateRow;
     private javax.swing.JComboBox<String> cboAbility;
     private javax.swing.JComboBox<String> cboItem;
     private javax.swing.JComboBox<String> cboMove1;
@@ -1906,6 +1981,16 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         for (JComboBox cbo : listMoveCBOXS) {
             cbo.setSelectedItem(empty);
         }
+        for (JSlider s : listStatSliders) {
+            s.setValue(0);
+        }
+        for (JSpinner j : listIvSPN) {
+            j.setValue(31);
+        }
+        spnLevel.setValue(100);
+        rdnGenderless.setSelected(true);
+        ckbShiny.setSelected(false);
+        txtNickname.setText(empty);
         cboAbility.setSelectedItem(empty);
         cboItem.setSelectedItem(empty);
         cboSpecies.setSelectedItem(empty);
@@ -2007,10 +2092,9 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
                 String levelString = line.substring("Level: ".length()).trim();
                 int level = Integer.parseInt(levelString);
                 spnLevel.setValue(level);
-            } else if (line.startsWith("Shiny:")) {
+            } else if (line.startsWith("Shiny:") && line.contains(": Y")) {
                 // Set shiny checkbox value
-                boolean isShiny = line.endsWith("Yes");
-                ckbShiny.setSelected(isShiny);
+                ckbShiny.setSelected(true);
              } else if (line.startsWith("Tera Type:")) {
                 // Set tera type combobox value
                 String teraType = line.substring("Tera Type: ".length()).trim();
@@ -2038,7 +2122,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
                         case "SpA":
                             sldSPATK.setValue(value);
                             break;
-                        case "SpDef":
+                        case "SpD":
                             sldSPDEF.setValue(value);
                             break;
                         case "Spe":
@@ -2247,7 +2331,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         
         if (isSpnIV31()) {
             
-            pokepaste.append("\nIVs:");
+            pokepaste.append("\nIVs: ");
             if((int)spnIVHP.getValue()!=31) {
                 pokepaste.append(String.valueOf(spnIVHP.getValue())).append(" HP / ");
             }
@@ -2281,6 +2365,177 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         }
         if (!cboMove4.getSelectedItem().toString().isEmpty()){
             pokepaste.append("\n- ").append(cboMove4.getSelectedItem().toString());
+        }
+
+        return String.valueOf(pokepaste);
+    }
+    /**
+     * Este método comprueba si hay algún movimiento que se repita.
+     * @return 
+     */
+    private boolean areMovesValid() {
+        Set<Object> selectedItems = new HashSet<>();
+        boolean isFirstComboBox = true;
+        
+        for (JComboBox move : listMoveCBOXS) {
+            Object selectedItem = move.getSelectedItem();
+
+            // Skip null values after the first JComboBox
+            if (!isFirstComboBox && selectedItem == null) {
+                continue;
+            }
+
+            isFirstComboBox = false;
+
+            // Check if the selected item is already in the set
+            if (!selectedItems.add(selectedItem)) {
+                // Duplicate found
+                return false;
+            }
+        }
+        // No duplicates found
+        return true;
+    }
+    
+    /**
+     * Este método comprueba que el primer movimiento no sea nulo.
+     * @return 
+     */
+    private boolean isFirstMoveNull() {
+        return listMoveCBOXS[0].getSelectedItem().toString().equals("");
+    }
+    
+    /**
+     * Este método permite obtener el id de una fila de la tabla pokepaste.
+     * @return 
+     */
+    private int getSelectedRowFromPokepaste(){
+        int rowIndex = tblPokemon.getSelectedRow();
+        int columnIndex = 0;
+        try {
+            Object id = tblPokemon.getValueAt(rowIndex, columnIndex);
+            return (int) id;
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "No ha seleccionado una fila. Por favor seleccione una fila e inténtelo de nuevo.", "No se ha seleccionado ningún Pokémon",
+                    JOptionPane.ERROR_MESSAGE);
+            return 0;
+        }   
+    }
+    
+    /**
+     * Este método sobrecargado permite generar un Pokepaste a partir de un objeto
+     * PokemonPaste, a diferencia del método sin parámetros que lo arma a base de
+     * los varios componentes de la GUI.
+     * @param p un objeto PokemonPaste
+     * @return string pokepaste
+     */
+    public String generatePokepaste(PokemonPaste p){
+        //EVs
+        int hp = p.getHpEv();
+        int atk = p.getAtkEv();
+        int def = p.getDefEv();
+        int spatk = p.getSpatkEv();
+        int spdef = p.getSpdefEv();
+        int spd = p.getSpdEv();
+        //IVs
+        int hpI = p.getHpIv();
+        int atkI = p.getAtkIv();
+        int defI = p.getDefIv();
+        int spatkI = p.getSpatkIv();
+        int spdefI = p.getSpdefIv();
+        int spdI = p.getSpdIv();
+        //Moves
+        String move1 = p.getMove1().getName();
+        String move2 = p.getMove2().getName();
+        String move3 = p.getMove3().getName();
+        String move4 = p.getMove4().getName();
+        // Stringbuilder creation
+        StringBuilder pokepaste = new StringBuilder();
+        
+        if (p.getNickname() != null) { // if the pokemon has a nickname
+            pokepaste.append(p.getNickname()).append(' ');
+            pokepaste.append("(").append(p.getPokemon().getName()).append(")");
+        } else { // else just show the species' name
+            pokepaste.append(p.getPokemon().getName());        
+        }
+        if (p.getGender().getId()!=3) {
+            pokepaste.append(" (").append(p.getGender().getName().charAt(0)).append(")");
+        }
+        pokepaste.append(" @ ").append(p.getItem().getName());
+        pokepaste.append("\n").append("Ability: ").append(p.getAbility().getName());
+        if (p.getLevel()!=100) {
+            pokepaste.append("\nLevel: ").append(String.valueOf(p.getLevel()));
+        }
+        if (p.getIsShiny()) {
+            pokepaste.append("\nShiny: Yes");
+        }
+        pokepaste.append("\nTera Type: ").append(p.getTeraType().getName());
+        if(hp != 0 || atk != 0 || def != 0 || 
+                spatk != 0 || spdef != 0 || spd != 0) {
+            pokepaste.append("\nEVs: ");
+            if(hp != 0) {
+                pokepaste.append(String.valueOf(hp)).append(" HP / ");
+            }
+            if(atk != 0) {
+                pokepaste.append(String.valueOf(atk)).append(" Atk / ");
+            }
+            if(def != 0) {
+                pokepaste.append(String.valueOf(def)).append(" Def / ");
+            }
+            if(spatk != 0) {
+                pokepaste.append(String.valueOf(spatk)).append(" SpA / ");
+            }
+            if(spdef!= 0) {
+                pokepaste.append(String.valueOf(spdef)).append(" SpDef / ");
+            }
+            if(spd != 0) {
+                pokepaste.append(String.valueOf(spd)).append(" Spe");
+            }
+            if (pokepaste.substring(pokepaste.length() - 3).equals(" / ")) {
+                pokepaste.delete(pokepaste.length() - 3, pokepaste.length());
+            }
+        }
+        
+        pokepaste.append("\n").append(p.getNature().getName()).append(" Nature");
+        // 
+        
+        if (hpI != 31 || atkI != 31 || defI != 31 || 
+                spatkI != 31 || spdefI != 31 || spdI != 31) {
+            
+            pokepaste.append("\nIVs: ");
+            if(hpI != 31) {
+                pokepaste.append(String.valueOf(hpI)).append(" HP / ");
+            }
+            if(atkI != 31) {
+                pokepaste.append(String.valueOf(atkI)).append(" Atk / ");
+            }
+            if(defI != 31) {
+                pokepaste.append(String.valueOf(defI)).append(" Def / ");
+            }
+            if(spatkI != 31) {
+                pokepaste.append(String.valueOf(spatkI)).append(" SpA / ");
+            }
+            if(spdefI != 31) {
+                pokepaste.append(String.valueOf(spdefI)).append(" SpDef / ");
+            }
+            if(spdI != 31) {
+                pokepaste.append(String.valueOf(spdI)).append(" Spe");
+            }
+            if (pokepaste.substring(pokepaste.length() - 3).equals(" / ")) {
+                pokepaste.delete(pokepaste.length() - 3, pokepaste.length());
+            }
+        }
+        if (!move1.isEmpty()){
+            pokepaste.append("\n- ").append(move1);
+        }
+        if (!move2.isEmpty()){
+            pokepaste.append("\n- ").append(move2);
+        }
+        if (!move3.isEmpty()){
+            pokepaste.append("\n- ").append(move3);
+        }
+        if (!move4.isEmpty()){
+            pokepaste.append("\n- ").append(move4);
         }
 
         return String.valueOf(pokepaste);
