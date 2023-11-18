@@ -5,9 +5,9 @@ import ActionListeners.CustomChangeListener;
 import ActionListeners.SliderMouseListener;
 import Interface.IPokemonCalculator;
 import bd.Conexion;
+//import static bd.Conexion.getConnection;
 import controlador.InteractuarPokepaste;
 import controlador.PoblarTablas;
-import java.awt.Component;
 import java.awt.event.ItemEvent;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -20,11 +20,10 @@ import javax.swing.JSlider;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.SQLException;
+import javax.swing.JPanel;
 import modelo.Ability;
 import modelo.Item;
 import modelo.Move;
@@ -35,6 +34,7 @@ import modelo.PokemonType;
 import modelo.Gender;
 import modelo.MoveInfo;
 import modelo.PokemonPasteInfo;
+import oracle.jdbc.OracleConnection;
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
@@ -47,7 +47,6 @@ import modelo.PokemonPasteInfo;
 public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator {
     
     private String emptyString = "";
-    private boolean isShiny;
     private Gender gender = new Gender(3, "Genderless");
     private ArrayList<Item> listaItems;
     private ArrayList<Pokemon> listaPokemon;
@@ -58,24 +57,51 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
     private PoblarTablas tb = new PoblarTablas();
     private InteractuarPokepaste ip = new InteractuarPokepaste();
     private SpinnerNumberModel spinnerModel = new SpinnerNumberModel(0, 0, 31, 1);
-    private JLabel[] listStatLabels;
-    private JLabel[] listFinalStatLabels;
-    private JSpinner[] listIvSPN;
-    private JComboBox[] listMoveCBOXS;
-    private JSlider[] listStatSliders;
+    private final JLabel[] listStatLabels;
+    private final JLabel[] listFinalStatLabels;
+    private final JSpinner[] listIvSPN;
+    private final JComboBox[] listMoveCBOXS;
+    private final JSlider[] listStatSliders;
+   
     
     /**
      * Creates new form MainWindow
      */
     public MainWindow() {
-        this.listaMove = tb.getMoves();
-        this.listaNature = tb.getNature();
-        this.listaPkmnType = tb.getPokemonType();
-        this.listaAbility = tb.getAbilities();
-        this.listaPokemon = tb.getPokemon();
-        this.listaItems = tb.getItems();
-        initComponents(); // Initialize all Swing components first
+        
+        try (Connection connection = Conexion.getInstance().getConnection()) {
+            
+            // Retrieve moves
+            this.listaMove = tb.getMoves(connection);
+            
+            // Retrieve nature
+            this.listaNature = tb.getNature(connection);
+          
+            // Retrieve Pokemon types
+            this.listaPkmnType = tb.getPokemonType(connection);
+            
+            // Retrieve abilities
+            this.listaAbility = tb.getAbilities(connection);
+    
+            // Retrieve Pokemon
+            this.listaPokemon = tb.getPokemon(connection);
+           
+            // Retrieve items
+            this.listaItems = tb.getItems(connection);
+           
 
+            // Perform other operations as needed
+            Conexion.getInstance().releaseConnection(connection);
+
+        } catch (SQLException e) {
+            System.out.println(e);
+            JOptionPane.showMessageDialog(this, "Error en la conexión a la base de datos", "El programa no pudo ser inicializado correctamente",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(0);   
+        } 
+       
+        initComponents(); // Initialize all Swing components first
+        
         // Then, initialize the statSliders array after the Swing components are created
         this.listStatSliders = new JSlider[] {sldHP, sldATK, sldDEF, sldSPATK, sldSPDEF, sldSPD};
         this.listStatLabels = new JLabel[] {lblHP, lblATK, lblDEF, lblSPATK, lblSPDEF, lblSPD};
@@ -94,10 +120,17 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         llenarPkmnType();
         llenarNature();
         fillMoveTbl();
+        updateRemainingEvs();
         initializeEventListeners();
+       
     }
 
-    
+    /**
+     * Este método permite actualizar los labels de EVs para que se modifiquen
+     * de acuerdo a los nuevos valores que vayan tomando los sliders de EVs.
+     * @param statLabels lista de labels que muestran los EVs asignados.
+     * @param statSliders lista de sliders que reciben los valores de EVs.
+     */
     private void setLabels(JLabel[] statLabels, JSlider[] statSliders) {
         for (int i = 0; i < statLabels.length; i++) {
             int index = i; // Final or effectively final variable
@@ -107,8 +140,53 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             });
         }
     }
-
-    public String generatePokepaste(){
+    /**
+     * Este método permite averiguar si se han asignado o no valores a los spinners 
+     * de IVs (por defecto 31).
+     * @return true si hay alguno distinto a 31. false si todos son 31.
+     * 
+     */
+    private boolean isSpnIV31() {
+        for (JSpinner i : listIvSPN) {
+            if((int)i.getValue()!=31) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Este método permite averiguar si se han asignado o no valores a los sliders 
+     * de EVs.
+     * @return true si hay alguno distinto a 0. false si todos son 0.
+     * 
+     */
+    private boolean isSldEV0(){
+        for (JSlider s : listStatSliders) {
+            if(s.getValue()!=0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Este método asigna a cada slider de EVs un Change Listener que ejecuta la actualización
+     * del label lblEVSum.
+     */
+    private void updateRemainingEvs() {
+        for (JSlider slider : listStatSliders) {
+            slider.addChangeListener(e -> {
+            if (!slider.getValueIsAdjusting()) {
+                updateLabel();
+            }
+        });
+        }
+    }
+    /**
+     * Este método actualiza el label en el que se guarda la cantidad restante de EVs
+     * que se pueden asignar a un Pokémon.
+     */
+    private void updateLabel() {
         int hp = sldHP.getValue();
         int atk = sldATK.getValue();
         int def = sldDEF.getValue();
@@ -116,12 +194,28 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         int spdef = sldSPDEF.getValue();
         int spd = sldSPD.getValue();
         int evSum = hp + atk + def + spatk + spdef + spd;
-        lblEVSum.setText(String.valueOf(evSum));
-        
+        lblEVSum.setText(String.valueOf(508 - evSum));
+    }
+
+    /**
+     * Este método obtiene los valores de los campos en la GUI para generar un pokepaste.
+     * Un pokepaste es la representación textual de los atributos de un Pokémon
+     * que se usan en el simulador de batallas Pokémon Showdown para importar o
+     * exportar sets.
+     * @return la String del pokepaste.
+     */
+    public String generatePokepaste(){
+        int hp = sldHP.getValue();
+        int atk = sldATK.getValue();
+        int def = sldDEF.getValue();
+        int spatk = sldSPATK.getValue();
+        int spdef = sldSPDEF.getValue();
+        int spd = sldSPD.getValue();
         StringBuilder pokepaste = new StringBuilder();
         
         if (!txtNickname.getText().isEmpty()) { // if the pokemon has a nickname
             pokepaste.append(txtNickname.getText()).append(' ');
+            pokepaste.append("(").append(cboSpecies.getSelectedItem().toString()).append(")");
         } else { // else just show the species' name
             pokepaste.append(cboSpecies.getSelectedItem().toString());        
         }
@@ -130,35 +224,66 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         }
         pokepaste.append(" @ ").append(cboItem.getSelectedItem().toString());
         pokepaste.append("\n").append("Ability: ").append(cboAbility.getSelectedItem().toString());
+        if ((int)spnLevel.getValue()!=100) {
+            pokepaste.append("\nLevel: ").append(spnLevel.getValue());
+        }
         if (ckbShiny.isSelected()) {
             pokepaste.append("\nShiny: Yes");
         }
-        pokepaste.append("\nTera Type: ").append(cboTeraType.getSelectedItem());
-        pokepaste.append("\nEVs: ");
-        if(sldHP.getValue()!=0) {
-            pokepaste.append(String.valueOf(hp)).append(" HP / ");
+        pokepaste.append("\nTera Type: ").append(cboTeraType.getSelectedItem().toString());
+        if(isSldEV0()) {
+            pokepaste.append("\nEVs: ");
+            if(sldHP.getValue()!=0) {
+                pokepaste.append(String.valueOf(hp)).append(" HP / ");
+            }
+            if(sldATK.getValue()!=0) {
+                pokepaste.append(String.valueOf(atk)).append(" Atk / ");
+            }
+            if(sldDEF.getValue()!=0) {
+                pokepaste.append(String.valueOf(def)).append(" Def / ");
+            }
+            if(sldSPATK.getValue()!=0) {
+                pokepaste.append(String.valueOf(spatk)).append(" SpA / ");
+            }
+            if(sldSPDEF.getValue()!=0) {
+                pokepaste.append(String.valueOf(spdef)).append(" SpDef / ");
+            }
+            if(sldSPD.getValue()!=0) {
+                pokepaste.append(String.valueOf(spd)).append(" Spe");
+            }
+            if (pokepaste.substring(pokepaste.length() - 3).equals(" / ")) {
+                pokepaste.delete(pokepaste.length() - 3, pokepaste.length());
+            }
         }
-        if(sldATK.getValue()!=0) {
-            pokepaste.append(String.valueOf(atk)).append(" Atk / ");
-        }
-        if(sldDEF.getValue()!=0) {
-            pokepaste.append(String.valueOf(def)).append(" Def / ");
-        }
-        if(sldSPATK.getValue()!=0) {
-            pokepaste.append(String.valueOf(spatk)).append(" SpA / ");
-        }
-        if(sldSPDEF.getValue()!=0) {
-            pokepaste.append(String.valueOf(spdef)).append(" SpDef / ");
-        }
-        if(sldSPD.getValue()!=0) {
-            pokepaste.append(String.valueOf(spd)).append(" Spe");
-        }
-        if (pokepaste.substring(pokepaste.length() - 3).equals(" / ")) {
-            pokepaste.delete(pokepaste.length() - 3, pokepaste.length());
-        }
-        pokepaste.append("\n").append(cboNature.getSelectedItem()).append(" Nature");
-        //
         
+        pokepaste.append("\n").append(cboNature.getSelectedItem().toString()).append(" Nature");
+        // 
+        
+        if (isSpnIV31()) {
+            
+            pokepaste.append("\nIVs:");
+            if((int)spnIVHP.getValue()!=31) {
+                pokepaste.append(String.valueOf(spnIVHP.getValue())).append(" HP / ");
+            }
+            if((int)spnIVATK.getValue()!=31) {
+                pokepaste.append(String.valueOf(spnIVATK.getValue())).append(" Atk / ");
+            }
+            if((int)spnIVDEF.getValue()!=31) {
+                pokepaste.append(String.valueOf(spnIVDEF.getValue())).append(" Def / ");
+            }
+            if((int)spnIVSPATK.getValue()!=31) {
+                pokepaste.append(String.valueOf(spnIVSPATK.getValue())).append(" SpA / ");
+            }
+            if((int)spnIVSPDEF.getValue()!=31) {
+                pokepaste.append(String.valueOf(spnIVSPDEF.getValue())).append(" SpDef / ");
+            }
+            if((int)spnIVSPD.getValue()!=31) {
+                pokepaste.append(String.valueOf(spnIVSPD.getValue())).append(" Spe");
+            }
+            if (pokepaste.substring(pokepaste.length() - 3).equals(" / ")) {
+                pokepaste.delete(pokepaste.length() - 3, pokepaste.length());
+            }
+        }
         if (!cboMove1.getSelectedItem().toString().isEmpty()){
             pokepaste.append("\n- ").append(cboMove1.getSelectedItem().toString());
         }
@@ -191,14 +316,15 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
 
         bgpGender = new javax.swing.ButtonGroup();
         jSlider1 = new javax.swing.JSlider();
-        jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txtPokepaste = new javax.swing.JTextArea();
-        lblEVSum = new javax.swing.JLabel();
-        btnProbarConexion = new javax.swing.JButton();
         jtpPokemonGeneration = new javax.swing.JTabbedPane();
-        jPanel2 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        tblPokemon = new javax.swing.JTable();
+        btnConsultar = new javax.swing.JButton();
+        jPanel5 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        tblMoves = new javax.swing.JTable();
+        jPanelPokemon = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
@@ -235,8 +361,13 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         btnMove4Desc = new javax.swing.JButton();
         btnItemDesc = new javax.swing.JButton();
         btnResetFields = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
         lblPokemonSprite = new javax.swing.JLabel();
-        jPanel4 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtPokepaste = new javax.swing.JTextArea();
+        btnProbarConexion = new javax.swing.JButton();
+        jLabel22 = new javax.swing.JLabel();
+        jPanelEVs = new javax.swing.JPanel();
         lblDEF = new javax.swing.JLabel();
         lblSPDEF = new javax.swing.JLabel();
         sldATK = new javax.swing.JSlider();
@@ -275,648 +406,19 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         spnIVSPATK = new javax.swing.JSpinner();
         spnIVSPDEF = new javax.swing.JSpinner();
         spnIVSPD = new javax.swing.JSpinner();
-        jPanel3 = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        tblPokemon = new javax.swing.JTable();
-        btnConsultar = new javax.swing.JButton();
-        jPanel5 = new javax.swing.JPanel();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        tblMoves = new javax.swing.JTable();
+        lblEVSum = new javax.swing.JLabel();
+        jLabel21 = new javax.swing.JLabel();
+        jLabel23 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Pokemon Generator");
         setIconImage(greatTuskIcon.getImage());
         setName("mainFrame"); // NOI18N
-        setResizable(false);
         setSize(new java.awt.Dimension(1920, 1080));
+        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
-
-        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setText("Pokepaste:");
-
-        txtPokepaste.setColumns(20);
-        txtPokepaste.setFont(new java.awt.Font("Leelawadee UI Semilight", 0, 18)); // NOI18N
-        txtPokepaste.setRows(5);
-        jScrollPane1.setViewportView(txtPokepaste);
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(212, 212, 212)
-                        .addComponent(jLabel1))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(51, 51, 51)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 393, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(52, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(82, Short.MAX_VALUE)
-                .addComponent(jLabel1)
-                .addGap(36, 36, 36)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 333, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(81, 81, 81))
-        );
-
-        btnProbarConexion.setText("Probar Conexion");
-        btnProbarConexion.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnProbarConexionActionPerformed(evt);
-            }
-        });
-
-        jPanel2.setBackground(new java.awt.Color(204, 204, 255));
-
-        jLabel2.setText("Nickname:");
-
-        jLabel3.setText("Species:");
-
-        jLabel4.setText("Move 1:");
-
-        jLabel5.setText("Move 2:");
-
-        jLabel6.setText("Move 4:");
-
-        jLabel7.setText("Move 3:");
-
-        jLabel8.setText("Items:");
-
-        jLabel10.setText("Ability:");
-
-        jLabel11.setText("Tera Type:");
-
-        cboTeraType.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cboTeraTypeActionPerformed(evt);
-            }
-        });
-
-        jLabel12.setText("Nature:");
-
-        cboNature.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cboNatureItemStateChanged(evt);
-            }
-        });
-
-        bgpGender.add(rbnFemale);
-        rbnFemale.setText("Female");
-        rbnFemale.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rbnFemaleActionPerformed(evt);
-            }
-        });
-
-        bgpGender.add(rbnMale);
-        rbnMale.setText("Male");
-        rbnMale.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rbnMaleActionPerformed(evt);
-            }
-        });
-
-        bgpGender.add(rdnGenderless);
-        rdnGenderless.setSelected(true);
-        rdnGenderless.setText("Random");
-        rdnGenderless.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rdnGenderlessActionPerformed(evt);
-            }
-        });
-
-        cboSpecies.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cboSpeciesItemStateChanged(evt);
-            }
-        });
-
-        cboMove1.setSelectedItem(new String(""));
-
-        cboAbility.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { " " }));
-
-        btnGeneratePokepaste.setText("Generate Pokepaste");
-        btnGeneratePokepaste.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnGeneratePokepasteActionPerformed(evt);
-            }
-        });
-
-        spnLevel.setModel(new javax.swing.SpinnerNumberModel(100, 1, 100, 1));
-        spnLevel.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                spnLevelStateChanged(evt);
-            }
-        });
-
-        jLabel20.setText("Level:");
-
-        ckbShiny.setText("Shiny");
-        ckbShiny.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ckbShinyActionPerformed(evt);
-            }
-        });
-
-        btnSavePokepaste.setText("Save Pokepaste");
-        btnSavePokepaste.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSavePokepasteActionPerformed(evt);
-            }
-        });
-
-        btnImportPaste.setText("Import Pokepaste");
-        btnImportPaste.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnImportPasteActionPerformed(evt);
-            }
-        });
-
-        btnAbilityDesc.setText("See description");
-        btnAbilityDesc.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnAbilityDescActionPerformed(evt);
-            }
-        });
-
-        btnMove1Desc.setText("See description");
-        btnMove1Desc.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMove1DescActionPerformed(evt);
-            }
-        });
-
-        btnMove2Desc.setText("See description");
-        btnMove2Desc.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMove2DescActionPerformed(evt);
-            }
-        });
-
-        btnMove3Desc.setText("See description");
-        btnMove3Desc.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMove3DescActionPerformed(evt);
-            }
-        });
-
-        btnMove4Desc.setText("See description");
-        btnMove4Desc.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMove4DescActionPerformed(evt);
-            }
-        });
-
-        btnItemDesc.setText("See description");
-        btnItemDesc.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnItemDescActionPerformed(evt);
-            }
-        });
-
-        btnResetFields.setText("Reset fields");
-        btnResetFields.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnResetFieldsActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(63, 63, 63)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(1, 1, 1)
-                        .addComponent(rbnFemale)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(rbnMale)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(rdnGenderless)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 719, Short.MAX_VALUE)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ckbShiny)
-                            .addComponent(btnSavePokepaste, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnImportPaste, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(btnResetFields, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnGeneratePokepaste, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                        .addGap(64, 64, 64))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel11, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel8, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel4, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel20, javax.swing.GroupLayout.Alignment.TRAILING))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtNickname)
-                            .addComponent(cboTeraType, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboNature, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboItem, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboMove4, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboMove3, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboMove2, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboMove1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboAbility, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cboSpecies, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(spnLevel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE)))
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(btnAbilityDesc, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnMove1Desc, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnMove2Desc, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnMove3Desc, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnMove4Desc, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnItemDesc, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGap(7, 7, 7)
-                                .addComponent(lblPokemonSprite)))
-                        .addGap(158, 158, 158))))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(40, 40, 40)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(txtNickname, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(ckbShiny))
-                .addGap(28, 28, 28)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel3)
-                        .addComponent(cboSpecies, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(lblPokemonSprite))
-                .addGap(17, 17, 17)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
-                    .addComponent(cboAbility, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAbilityDesc))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(cboMove1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnMove1Desc))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(cboMove2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnMove2Desc))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel7)
-                    .addComponent(cboMove3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnMove3Desc))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
-                    .addComponent(cboMove4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnMove4Desc))
-                .addGap(22, 22, 22)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel8)
-                    .addComponent(cboItem, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnItemDesc))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel11)
-                    .addComponent(cboTeraType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(cboNature, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel12))
-                .addGap(23, 23, 23)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(spnLevel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel20)
-                    .addComponent(btnImportPaste))
-                .addGap(18, 18, 18)
-                .addComponent(btnGeneratePokepaste)
-                .addGap(18, 18, 18)
-                .addComponent(btnResetFields)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 48, Short.MAX_VALUE)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(rbnFemale)
-                    .addComponent(rbnMale)
-                    .addComponent(rdnGenderless)
-                    .addComponent(btnSavePokepaste))
-                .addGap(29, 29, 29))
-        );
-
-        jtpPokemonGeneration.addTab("Pokémon", jPanel2);
-
-        jPanel4.setBackground(new java.awt.Color(204, 204, 204));
-        jPanel4.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-
-        lblDEF.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-        lblSPDEF.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-        sldATK.setMajorTickSpacing(36);
-        sldATK.setMaximum(252);
-        sldATK.setPaintLabels(true);
-        sldATK.setValue(0);
-
-        sldDEF.setMajorTickSpacing(36);
-        sldDEF.setMaximum(252);
-        sldDEF.setPaintLabels(true);
-        sldDEF.setValue(0);
-
-        lblSPATK.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-        sldSPD.setMajorTickSpacing(36);
-        sldSPD.setMaximum(252);
-        sldSPD.setPaintLabels(true);
-        sldSPD.setValue(0);
-
-        lblSPD.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-        lblHP.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-        sldSPDEF.setMajorTickSpacing(36);
-        sldSPDEF.setMaximum(252);
-        sldSPDEF.setPaintLabels(true);
-        sldSPDEF.setValue(0);
-
-        lblATK.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-
-        sldHP.setMajorTickSpacing(36);
-        sldHP.setMaximum(252);
-        sldHP.setPaintLabels(true);
-        sldHP.setValue(0);
-        sldHP.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-            public void mouseDragged(java.awt.event.MouseEvent evt) {
-                sldHPMouseDragged(evt);
-            }
-        });
-
-        jLabel9.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
-        jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel9.setText("EVs: ");
-
-        jLabel13.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
-        jLabel13.setText("HP:");
-
-        sldSPATK.setMajorTickSpacing(36);
-        sldSPATK.setMaximum(252);
-        sldSPATK.setPaintLabels(true);
-        sldSPATK.setValue(0);
-
-        jLabel14.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
-        jLabel14.setText("ATK:");
-
-        jLabel15.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
-        jLabel15.setText("DEF:");
-
-        jLabel16.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
-        jLabel16.setText("SPATK:");
-
-        jLabel17.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
-        jLabel17.setText("SPDEF:");
-
-        jLabel18.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
-        jLabel18.setText("SPD:");
-
-        pgbHP.setMaximum(255);
-        pgbHP.setString("");
-        pgbHP.setStringPainted(true);
-
-        pgbATK.setMaximum(255);
-        pgbATK.setString("");
-        pgbATK.setStringPainted(true);
-
-        pgbDEF.setMaximum(255);
-        pgbDEF.setString("");
-        pgbDEF.setStringPainted(true);
-
-        pgbSPATK.setMaximum(255);
-        pgbSPATK.setString("");
-        pgbSPATK.setStringPainted(true);
-
-        pgbSPDEF.setMaximum(255);
-        pgbSPDEF.setRequestFocusEnabled(false);
-        pgbSPDEF.setString("");
-        pgbSPDEF.setStringPainted(true);
-
-        pgbSPD.setMaximum(255);
-        pgbSPD.setString("");
-        pgbSPD.setStringPainted(true);
-
-        jLabel19.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
-        jLabel19.setText("IVs");
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addGap(35, 35, 35)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel4Layout.createSequentialGroup()
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel15, javax.swing.GroupLayout.Alignment.TRAILING)
-                                            .addComponent(jLabel16, javax.swing.GroupLayout.Alignment.TRAILING))
-                                        .addGap(18, 18, 18)
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(pgbDEF, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(pgbSPATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addGap(57, 57, 57)
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(lblSPATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(lblDEF, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(sldSPATK, javax.swing.GroupLayout.PREFERRED_SIZE, 402, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(sldDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 413, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                    .addGroup(jPanel4Layout.createSequentialGroup()
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING)
-                                            .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.TRAILING))
-                                        .addGap(18, 18, 18)
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(pgbHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(pgbATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addGap(57, 57, 57)
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(lblHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(lblATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(sldHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 402, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(sldATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel17, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel18, javax.swing.GroupLayout.Alignment.TRAILING))
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(pgbSPDEF, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(pgbSPD, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(57, 57, 57)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(lblSPD, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(lblSPDEF, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(sldSPD, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 415, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(sldSPDEF, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 404, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(spnIVHP, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(spnIVATK, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(spnIVDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(spnIVSPATK, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(spnIVSPDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(spnIVSPD, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(lblFinalSPATK, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(lblFinalDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(lblFinalATK, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(lblFinalHP, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(lblFinalSPDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(lblFinalSPD, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addGap(340, 340, 340)
-                                .addComponent(jLabel9))
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addGap(819, 819, 819)
-                                .addComponent(jLabel19)))
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
-        );
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {sldATK, sldDEF, sldHP, sldSPATK, sldSPD, sldSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {spnIVATK, spnIVDEF, spnIVHP, spnIVSPATK, spnIVSPD, spnIVSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {lblFinalATK, lblFinalDEF, lblFinalHP, lblFinalSPATK, lblFinalSPD, lblFinalSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {pgbATK, pgbDEF, pgbHP, pgbSPATK, pgbSPD, pgbSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jLabel13, jLabel14, jLabel15, jLabel16, jLabel17, jLabel18});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jLabel9, lblATK, lblDEF, lblHP, lblSPATK, lblSPD, lblSPDEF});
-
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(50, 50, 50)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel9)
-                    .addComponent(jLabel19))
-                .addGap(43, 43, 43)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(spnIVHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(sldHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblFinalHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(pgbHP, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(lblHP, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(lblATK, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(sldATK, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(spnIVATK, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(lblFinalATK, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(pgbATK, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jLabel14, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 5, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(pgbDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(sldDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(lblFinalDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(spnIVDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(sldSPATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(lblSPATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addComponent(spnIVSPATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(lblFinalSPATK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jLabel16, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(pgbSPATK, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(pgbSPDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGap(8, 8, 8)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addGroup(jPanel4Layout.createSequentialGroup()
-                                    .addGap(8, 8, 8)
-                                    .addComponent(lblFinalSPDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addComponent(lblSPDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 54, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addComponent(spnIVSPDEF, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(8, 8, 8))
-                            .addComponent(sldSPDEF, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(lblFinalSPD, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(sldSPD, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblSPD, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(spnIVSPD, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(pgbSPD, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(186, Short.MAX_VALUE))
-        );
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {sldATK, sldDEF, sldHP, sldSPATK, sldSPD, sldSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {spnIVATK, spnIVDEF, spnIVHP, spnIVSPATK, spnIVSPD, spnIVSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {lblFinalATK, lblFinalDEF, lblFinalHP, lblFinalSPATK, lblFinalSPD, lblFinalSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {pgbATK, pgbDEF, pgbHP, pgbSPATK, pgbSPD, pgbSPDEF});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jLabel13, jLabel14, jLabel15, jLabel16, jLabel17, jLabel18});
-
-        jPanel4Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jLabel9, lblATK, lblDEF, lblHP, lblSPATK, lblSPD, lblSPDEF});
-
-        jtpPokemonGeneration.addTab("EV's", jPanel4);
+        jtpPokemonGeneration.setTabPlacement(javax.swing.JTabbedPane.RIGHT);
+        jtpPokemonGeneration.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
         jPanel3.setBackground(new java.awt.Color(255, 204, 255));
 
@@ -948,7 +450,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
                 .addGap(24, 24, 24)
                 .addComponent(btnConsultar)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 1263, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 970, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -957,7 +459,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
                 .addComponent(btnConsultar)
                 .addGap(32, 32, 32)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 489, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(159, Short.MAX_VALUE))
+                .addContainerGap(109, Short.MAX_VALUE))
         );
 
         jtpPokemonGeneration.addTab("Saved Pokémon", jPanel3);
@@ -1002,7 +504,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 1251, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 946, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel5Layout.setVerticalGroup(
@@ -1010,55 +512,483 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGap(100, 100, 100)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 463, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(176, Short.MAX_VALUE))
+                .addContainerGap(122, Short.MAX_VALUE))
         );
 
         jtpPokemonGeneration.addTab("Moves Table", jPanel5);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(536, 536, 536)
-                        .addComponent(btnProbarConexion))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(1340, 1340, 1340)
-                                .addComponent(lblEVSum, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(jtpPokemonGeneration, javax.swing.GroupLayout.PREFERRED_SIZE, 1263, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(382, 382, 382)
-                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(1586, 1586, 1586)
-                        .addComponent(lblEVSum, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(64, 64, 64)
-                        .addComponent(btnProbarConexion)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(26, 26, 26)
-                                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jtpPokemonGeneration, javax.swing.GroupLayout.PREFERRED_SIZE, 778, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        jPanelPokemon.setBackground(new java.awt.Color(255, 255, 255));
+        jPanelPokemon.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jLabel2.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel2.setText("Nickname:");
+        jPanelPokemon.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 160, -1, -1));
+
+        jLabel3.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel3.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel3.setText("Species:");
+        jPanelPokemon.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 210, -1, -1));
+
+        jLabel4.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel4.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel4.setText("Move 1:");
+        jPanelPokemon.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 310, -1, -1));
+
+        jLabel5.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel5.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel5.setText("Move 2:");
+        jPanelPokemon.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 360, -1, -1));
+
+        jLabel6.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel6.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel6.setText("Move 4:");
+        jPanelPokemon.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 460, -1, -1));
+
+        jLabel7.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel7.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel7.setText("Move 3:");
+        jPanelPokemon.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 410, -1, -1));
+
+        jLabel8.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel8.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel8.setText("Items:");
+        jPanelPokemon.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 510, -1, -1));
+        jPanelPokemon.add(txtNickname, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 180, 180, -1));
+
+        jLabel10.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel10.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel10.setText("Ability:");
+        jPanelPokemon.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 260, -1, -1));
+
+        jLabel11.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel11.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel11.setText("Tera Type:");
+        jPanelPokemon.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 560, -1, -1));
+
+        cboTeraType.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        cboTeraType.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cboTeraTypeActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(cboTeraType, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 580, 300, -1));
+
+        jLabel12.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel12.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel12.setText("Nature:");
+        jPanelPokemon.add(jLabel12, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 610, -1, -1));
+
+        cboNature.setToolTipText("");
+        cboNature.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        cboNature.setName(""); // NOI18N
+        cboNature.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cboNatureItemStateChanged(evt);
+            }
+        });
+        jPanelPokemon.add(cboNature, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 630, 300, -1));
+
+        rbnFemale.setBackground(new java.awt.Color(189, 15, 52));
+        bgpGender.add(rbnFemale);
+        rbnFemale.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        rbnFemale.setForeground(new java.awt.Color(255, 255, 255));
+        rbnFemale.setText("Female");
+        rbnFemale.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        rbnFemale.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rbnFemaleActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(rbnFemale, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 520, 70, -1));
+
+        rbnMale.setBackground(new java.awt.Color(189, 15, 52));
+        bgpGender.add(rbnMale);
+        rbnMale.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        rbnMale.setForeground(new java.awt.Color(255, 255, 255));
+        rbnMale.setText("Male");
+        rbnMale.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        rbnMale.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rbnMaleActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(rbnMale, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 560, -1, -1));
+
+        rdnGenderless.setBackground(new java.awt.Color(189, 15, 52));
+        bgpGender.add(rdnGenderless);
+        rdnGenderless.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        rdnGenderless.setForeground(new java.awt.Color(255, 255, 255));
+        rdnGenderless.setSelected(true);
+        rdnGenderless.setText("Random");
+        rdnGenderless.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        rdnGenderless.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rdnGenderlessActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(rdnGenderless, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 600, 80, -1));
+
+        cboSpecies.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        cboSpecies.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cboSpeciesItemStateChanged(evt);
+            }
+        });
+        jPanelPokemon.add(cboSpecies, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 230, 300, -1));
+
+        cboMove1.setSelectedItem(new String(""));
+        cboMove1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jPanelPokemon.add(cboMove1, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 330, 300, -1));
+
+        cboMove2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jPanelPokemon.add(cboMove2, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 380, 300, -1));
+
+        cboMove3.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jPanelPokemon.add(cboMove3, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 430, 300, -1));
+
+        cboMove4.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jPanelPokemon.add(cboMove4, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 480, 300, -1));
+
+        cboItem.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jPanelPokemon.add(cboItem, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 530, 300, -1));
+
+        cboAbility.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { " " }));
+        cboAbility.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jPanelPokemon.add(cboAbility, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 280, 300, -1));
+
+        btnGeneratePokepaste.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        btnGeneratePokepaste.setText("Generate");
+        btnGeneratePokepaste.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnGeneratePokepaste.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGeneratePokepasteActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnGeneratePokepaste, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 510, 90, -1));
+
+        spnLevel.setModel(new javax.swing.SpinnerNumberModel(100, 1, 100, 1));
+        spnLevel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        spnLevel.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                spnLevelStateChanged(evt);
+            }
+        });
+        jPanelPokemon.add(spnLevel, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 520, -1, -1));
+
+        jLabel20.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        jLabel20.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel20.setText("Level:");
+        jPanelPokemon.add(jLabel20, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 500, -1, -1));
+
+        ckbShiny.setBackground(new java.awt.Color(189, 15, 52));
+        ckbShiny.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        ckbShiny.setForeground(new java.awt.Color(255, 255, 255));
+        ckbShiny.setText("Shiny");
+        ckbShiny.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        ckbShiny.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ckbShinyActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(ckbShiny, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 580, -1, -1));
+
+        btnSavePokepaste.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        btnSavePokepaste.setText("Save");
+        btnSavePokepaste.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSavePokepaste.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSavePokepasteActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnSavePokepaste, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 570, 90, -1));
+
+        btnImportPaste.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        btnImportPaste.setText("Import");
+        btnImportPaste.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnImportPaste.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImportPasteActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnImportPaste, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 600, 90, -1));
+
+        btnAbilityDesc.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        btnAbilityDesc.setForeground(new java.awt.Color(206, 17, 49));
+        btnAbilityDesc.setText("?");
+        btnAbilityDesc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAbilityDesc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAbilityDescActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnAbilityDesc, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 280, 40, 20));
+
+        btnMove1Desc.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        btnMove1Desc.setForeground(new java.awt.Color(206, 17, 49));
+        btnMove1Desc.setText("?");
+        btnMove1Desc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMove1Desc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMove1DescActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnMove1Desc, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 330, 40, 20));
+
+        btnMove2Desc.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        btnMove2Desc.setForeground(new java.awt.Color(206, 17, 49));
+        btnMove2Desc.setText("?");
+        btnMove2Desc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMove2Desc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMove2DescActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnMove2Desc, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 380, 40, 20));
+
+        btnMove3Desc.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        btnMove3Desc.setForeground(new java.awt.Color(206, 17, 49));
+        btnMove3Desc.setText("?");
+        btnMove3Desc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMove3Desc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMove3DescActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnMove3Desc, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 430, 40, 20));
+
+        btnMove4Desc.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        btnMove4Desc.setForeground(new java.awt.Color(206, 17, 49));
+        btnMove4Desc.setText("?");
+        btnMove4Desc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnMove4Desc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMove4DescActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnMove4Desc, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 480, 40, 20));
+
+        btnItemDesc.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        btnItemDesc.setForeground(new java.awt.Color(206, 17, 49));
+        btnItemDesc.setText("?");
+        btnItemDesc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnItemDesc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnItemDescActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnItemDesc, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 530, 40, 20));
+
+        btnResetFields.setFont(new java.awt.Font("Eras Demi ITC", 0, 12)); // NOI18N
+        btnResetFields.setText("Reset");
+        btnResetFields.setToolTipText("");
+        btnResetFields.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnResetFields.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnResetFieldsActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnResetFields, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 540, 90, -1));
+
+        jLabel1.setFont(new java.awt.Font("Eras Demi ITC", 0, 18)); // NOI18N
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("Pokepaste:");
+        jPanelPokemon.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 170, -1, -1));
+        jPanelPokemon.add(lblPokemonSprite, new org.netbeans.lib.awtextra.AbsoluteConstraints(300, 50, 110, 100));
+
+        txtPokepaste.setBackground(new java.awt.Color(239, 240, 208));
+        txtPokepaste.setColumns(20);
+        txtPokepaste.setFont(new java.awt.Font("Eras Bold ITC", 0, 14)); // NOI18N
+        txtPokepaste.setRows(5);
+        txtPokepaste.setBorder(null);
+        txtPokepaste.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
+        jScrollPane1.setViewportView(txtPokepaste);
+
+        jPanelPokemon.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 200, 310, 220));
+
+        btnProbarConexion.setText("Probar Conexion");
+        btnProbarConexion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnProbarConexionActionPerformed(evt);
+            }
+        });
+        jPanelPokemon.add(btnProbarConexion, new org.netbeans.lib.awtextra.AbsoluteConstraints(740, 50, -1, -1));
+
+        jLabel22.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/pokedex/PokedexOpen.jpg"))); // NOI18N
+        jPanelPokemon.add(jLabel22, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -10, 920, 700));
+
+        jtpPokemonGeneration.addTab("Pokémon", jPanelPokemon);
+
+        jPanelEVs.setBackground(new java.awt.Color(204, 204, 204));
+        jPanelEVs.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        jPanelEVs.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        lblDEF.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jPanelEVs.add(lblDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 360, 42, 54));
+
+        lblSPDEF.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jPanelEVs.add(lblSPDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 500, 42, 54));
+
+        sldATK.setMajorTickSpacing(36);
+        sldATK.setMaximum(252);
+        sldATK.setPaintLabels(true);
+        sldATK.setValue(0);
+        sldATK.setCursor(new java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR));
+        jPanelEVs.add(sldATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 290, 220, 46));
+
+        sldDEF.setMajorTickSpacing(36);
+        sldDEF.setMaximum(252);
+        sldDEF.setPaintLabels(true);
+        sldDEF.setValue(0);
+        sldDEF.setCursor(new java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR));
+        jPanelEVs.add(sldDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 360, 220, 46));
+
+        lblSPATK.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jPanelEVs.add(lblSPATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 430, 42, 54));
+
+        sldSPD.setMajorTickSpacing(36);
+        sldSPD.setMaximum(252);
+        sldSPD.setPaintLabels(true);
+        sldSPD.setValue(0);
+        sldSPD.setCursor(new java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR));
+        jPanelEVs.add(sldSPD, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 570, 220, 46));
+
+        lblSPD.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jPanelEVs.add(lblSPD, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 570, 42, 54));
+
+        lblHP.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jPanelEVs.add(lblHP, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 220, 42, 54));
+
+        sldSPDEF.setMajorTickSpacing(36);
+        sldSPDEF.setMaximum(252);
+        sldSPDEF.setPaintLabels(true);
+        sldSPDEF.setValue(0);
+        sldSPDEF.setCursor(new java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR));
+        jPanelEVs.add(sldSPDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 496, 220, 50));
+
+        lblATK.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jPanelEVs.add(lblATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 290, 42, 54));
+
+        sldHP.setMajorTickSpacing(36);
+        sldHP.setMaximum(252);
+        sldHP.setPaintLabels(true);
+        sldHP.setValue(0);
+        sldHP.setCursor(new java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR));
+        sldHP.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                sldHPMouseDragged(evt);
+            }
+        });
+        jPanelEVs.add(sldHP, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 220, 220, 46));
+
+        jLabel9.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel9.setText("EVs: ");
+        jPanelEVs.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 100, -1, 54));
+
+        jLabel13.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        jLabel13.setText(" HP");
+        jPanelEVs.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 240, 20, 30));
+
+        sldSPATK.setMajorTickSpacing(36);
+        sldSPATK.setMaximum(252);
+        sldSPATK.setPaintLabels(true);
+        sldSPATK.setValue(0);
+        sldSPATK.setCursor(new java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR));
+        jPanelEVs.add(sldSPATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 430, 220, 46));
+
+        jLabel14.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        jLabel14.setText("ATK");
+        jPanelEVs.add(jLabel14, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 300, 30, 30));
+
+        jLabel15.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        jLabel15.setText("DEF");
+        jPanelEVs.add(jLabel15, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 360, 30, 30));
+
+        jLabel16.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        jLabel16.setText("SPATK");
+        jPanelEVs.add(jLabel16, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 240, 40, 30));
+
+        jLabel17.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        jLabel17.setText("SPDEF");
+        jPanelEVs.add(jLabel17, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 300, -1, 30));
+
+        jLabel18.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        jLabel18.setText("SPD");
+        jPanelEVs.add(jLabel18, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 360, 30, 30));
+
+        pgbHP.setMaximum(255);
+        pgbHP.setString("");
+        pgbHP.setStringPainted(true);
+        jPanelEVs.add(pgbHP, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 210, 100, 40));
+
+        pgbATK.setMaximum(255);
+        pgbATK.setString("");
+        pgbATK.setStringPainted(true);
+        jPanelEVs.add(pgbATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 270, 100, 40));
+
+        pgbDEF.setMaximum(255);
+        pgbDEF.setString("");
+        pgbDEF.setStringPainted(true);
+        jPanelEVs.add(pgbDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 270, 100, 40));
+
+        pgbSPATK.setMaximum(255);
+        pgbSPATK.setString("");
+        pgbSPATK.setStringPainted(true);
+        jPanelEVs.add(pgbSPATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 210, 100, 40));
+
+        pgbSPDEF.setMaximum(255);
+        pgbSPDEF.setRequestFocusEnabled(false);
+        pgbSPDEF.setString("");
+        pgbSPDEF.setStringPainted(true);
+        jPanelEVs.add(pgbSPDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 330, 100, 40));
+
+        pgbSPD.setMaximum(255);
+        pgbSPD.setString("");
+        pgbSPD.setStringPainted(true);
+        jPanelEVs.add(pgbSPD, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 330, 100, 40));
+        jPanelEVs.add(lblFinalHP, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 220, 30, 46));
+        jPanelEVs.add(lblFinalATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 290, 30, 46));
+        jPanelEVs.add(lblFinalDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 360, 30, 46));
+        jPanelEVs.add(lblFinalSPATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 430, 30, 46));
+        jPanelEVs.add(lblFinalSPDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 500, 30, 46));
+        jPanelEVs.add(lblFinalSPD, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 570, 30, 46));
+
+        jLabel19.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel19.setText("IVs");
+        jPanelEVs.add(jLabel19, new org.netbeans.lib.awtextra.AbsoluteConstraints(620, 80, -1, -1));
+        jPanelEVs.add(spnIVHP, new org.netbeans.lib.awtextra.AbsoluteConstraints(784, 220, 60, 46));
+        jPanelEVs.add(spnIVATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(784, 290, 60, 46));
+        jPanelEVs.add(spnIVDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(784, 360, 60, 46));
+        jPanelEVs.add(spnIVSPATK, new org.netbeans.lib.awtextra.AbsoluteConstraints(784, 430, 60, 46));
+        jPanelEVs.add(spnIVSPDEF, new org.netbeans.lib.awtextra.AbsoluteConstraints(784, 496, 60, 50));
+        jPanelEVs.add(spnIVSPD, new org.netbeans.lib.awtextra.AbsoluteConstraints(784, 570, 60, 46));
+
+        lblEVSum.setFont(new java.awt.Font("Tw Cen MT Condensed Extra Bold", 0, 18)); // NOI18N
+        lblEVSum.setText("508");
+        jPanelEVs.add(lblEVSum, new org.netbeans.lib.awtextra.AbsoluteConstraints(190, 430, 40, 20));
+
+        jLabel21.setFont(new java.awt.Font("Segoe UI Black", 0, 12)); // NOI18N
+        jLabel21.setText("Remaining EV's");
+        jPanelEVs.add(jLabel21, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 410, -1, -1));
+
+        jLabel23.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/pokedex/PokedexOpenEVs.jpg"))); // NOI18N
+        jPanelEVs.add(jLabel23, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -10, 920, 700));
+
+        jtpPokemonGeneration.addTab("EV's", jPanelEVs);
+
+        getContentPane().add(jtpPokemonGeneration, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, 690));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
+    /**
+     * Este método permite añadir las limitaciones a los sliders de EVs. Sea el mouse
+     * clickeado o el knob de los sliders arrastrados, la suma de los sliders no será
+     * nunca mayor a 508. Además, al ser el mouse soltado, se asegura que el valor de
+     * EVs seleccionado para cada estadística siempre será múltiplo de 4.
+     * @param statSliders 
+     */
     public static void addLimit(JSlider[] statSliders) {
         SliderMouseListener sliderMouseListener = new SliderMouseListener(statSliders);
         for (JSlider statSlider : statSliders) {
@@ -1092,10 +1022,10 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
     private void btnProbarConexionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnProbarConexionActionPerformed
         // TODO add your handling code here:
         try {
-            Conexion connection = new Conexion();
-            Connection ctn = connection.getConnection();
+            Connection connection = Conexion.getInstance().getConnection();
             System.out.println("Bien");
-        } catch (Exception e) {
+            Conexion.getInstance().releaseConnection(connection);
+        } catch (SQLException e) {
             System.out.println("Error:" + e.getMessage());
         }
     }//GEN-LAST:event_btnProbarConexionActionPerformed
@@ -1123,7 +1053,7 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
 
     private void ckbShinyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ckbShinyActionPerformed
         // TODO add your handling code here:
-        isShiny = this.ckbShiny.isSelected();
+        this.ckbShiny.isSelected();
     }//GEN-LAST:event_ckbShinyActionPerformed
 
     private void cboNatureItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cboNatureItemStateChanged
@@ -1135,7 +1065,17 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
     private void btnSavePokepasteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSavePokepasteActionPerformed
         // TODO add your handling code here:
         PokemonPaste buildPokepaste = buildPokepaste();
-        ip.insertPokepaste(buildPokepaste);
+        try (Connection connection = Conexion.getInstance().getConnection()) {
+            if(ip.insertPokepaste(connection, buildPokepaste)){
+                System.out.println("Insertado correctamente");
+            } else {
+                System.out.println("Inserción fallada");
+            }
+            Conexion.getInstance().releaseConnection(connection);
+        // Use the itemList as needed
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
     }//GEN-LAST:event_btnSavePokepasteActionPerformed
 
     private void spnLevelStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_spnLevelStateChanged
@@ -1155,43 +1095,53 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
 
     private void btnImportPasteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportPasteActionPerformed
         // TODO add your handling code here:
-        setValuesFromPokepaste(txtPokepaste.getText());
+        resetFields();
+        importPokepaste(txtPokepaste.getText());
     }//GEN-LAST:event_btnImportPasteActionPerformed
 
     private void btnAbilityDescActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAbilityDescActionPerformed
         // TODO add your handling code here:
+        
         String abilityDescription = getAbilityDescription();
-    
+        if (abilityDescription != null) {
+            JOptionPane.showMessageDialog(this, abilityDescription, "Ability Description", JOptionPane.INFORMATION_MESSAGE);
+        }
         // Show a pop-up message with the ability description
-        JOptionPane.showMessageDialog(this, abilityDescription, "Ability Description", JOptionPane.INFORMATION_MESSAGE);
+        
     }//GEN-LAST:event_btnAbilityDescActionPerformed
 
     private void btnMove1DescActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMove1DescActionPerformed
         // TODO add your handling code here:
         String moveDesc = getMoveDescription(cboMove1);
         // Show a pop-up message with the ability description
-        JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        if (moveDesc != null) {
+            JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        }
+        
     }//GEN-LAST:event_btnMove1DescActionPerformed
 
     private void btnMove2DescActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMove2DescActionPerformed
         // TODO add your handling code here:
         String moveDesc = getMoveDescription(cboMove2);
-        // Show a pop-up message with the ability description
-        JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        if (moveDesc != null) {
+            JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:event_btnMove2DescActionPerformed
 
     private void btnMove3DescActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMove3DescActionPerformed
         // TODO add your handling code here:
         String moveDesc = getMoveDescription(cboMove3);
-        // Show a pop-up message with the ability description
-        JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        if (moveDesc != null) {
+            JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:event_btnMove3DescActionPerformed
 
     private void btnMove4DescActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMove4DescActionPerformed
         // TODO add your handling code here:
         String moveDesc = getMoveDescription(cboMove4);
-        // Show a pop-up message with the ability description
-        JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        if (moveDesc != null) {
+            JOptionPane.showMessageDialog(this, moveDesc, "Move Description", JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:event_btnMove4DescActionPerformed
 
     private void btnItemDescActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnItemDescActionPerformed
@@ -1285,6 +1235,9 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
+    private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1292,11 +1245,10 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanelEVs;
+    private javax.swing.JPanel jPanelPokemon;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
@@ -1489,11 +1441,12 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
      * sus naturalezas.
      * @param natureID el id de la naturaleza en la base de datos.
      * @param atk el stat de ataque
-     * @param def ...
-     * @param spatk ...
-     * @param spdef ...
-     * @param spd ...
+     * @param def el stat de defensa
+     * @param spatk el stat de ataque especial
+     * @param spdef el stat de defensa especial
+     * @param spd el stat de velocidad
      * @return devuelve la lista de stats ya modificados tras pasar por el switch.
+     * Nota: el stat de HP (puntos de vida) no es afectado por ninguna naturaleza.
      */
     private int[] modifyStatNature(int natureID, int atk, int def, int spatk, int spdef, int spd) {
         int[] effects = {atk, def, spatk, spdef, spd};
@@ -1615,7 +1568,6 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
 
             case 25: // Quirky
                 return effects;
-
             default:
                 throw new AssertionError("Invalid nature ID: " + natureID);
         }
@@ -1656,7 +1608,11 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         return (int) Math.floor((Math.floor(2 * baseStat + IV + Math.floor(EV / 4)) * level / 100 + 5));
     }
 
-    
+    /**
+     * Este método inicializa los ChangeListeners y aplica los modelos definidos
+     * a cada spinner de IVs.
+     * @param spinners la lista de spinners de IVs.
+     */
     private void initializeSpinners(JSpinner[] spinners) {
         for (JSpinner spinner : spinners) {
             CustomChangeListener customChangeListener = new CustomChangeListener();
@@ -1665,7 +1621,12 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
             spinner.setModel(model);
         }
     }
-    
+    /**
+     * Este método calcula y publica en los finalStatSliders las estadísticas 
+     * finales de los Pokémon, basadas en sus características base, nivel, EVs, 
+     * IVs y naturaleza. Estos serán actualizados cada vez que se interactúe con los
+     * sliders de EVs, los spinners de IVs y los movimientos? eso es raro
+     */
     private void initializeEventListeners() {
         // Sliders
         for (JSlider slider : listStatSliders) {
@@ -1853,163 +1814,122 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
         DefaultTableModel tbl = (DefaultTableModel) this.tblPokemon.getModel();
         //para que no se dupliquela información
         tbl.setRowCount(0);
-        ArrayList<PokemonPasteInfo> lista =  ip.listPokepaste();
-        for (PokemonPasteInfo p : lista) {
-            tbl.addRow(new Object[]
-            {
-                p.getId(), p.getPokemon(), p.getTeraType(), 
-                p.getAbility(), p.getHp(), p.getAtk(), p.getDef(), p.getSpatk(), 
-                p.getSpdef(), p.getSpd(), p.getLevel(), p.getIsShiny()
-            });
-            
+        try (Connection connection = Conexion.getInstance().getConnection()) {
+            ArrayList<PokemonPasteInfo> lista =  ip.listPokepaste(connection);
+            for (PokemonPasteInfo p : lista) {
+                tbl.addRow(new Object[]
+                {
+                    p.getId(), p.getPokemon(), p.getTeraType(), 
+                    p.getAbility(), p.getHp(), p.getAtk(), p.getDef(), p.getSpatk(), 
+                    p.getSpdef(), p.getSpd(), p.getLevel(), p.getIsShiny()
+                });
+            }
+           
+        // Use the itemList as needed
+        } catch (SQLException e) {
+            System.out.println(e);
         }
     }
-    
+    /**
+     * Este método llena la tabla tblMoves con todos los movimientos de la base
+     * de datos. Se ejecuta al inicio del programa para poder ser consultada en
+     * cualquier momento.
+     */
     private void fillMoveTbl() {
         DefaultTableModel tbl = (DefaultTableModel) this.tblMoves.getModel();
         tbl.setRowCount(0);
-        for (MoveInfo m : ip.listMovesInfo()) {
+        
+        try (Connection connection = Conexion.getInstance().getConnection()) {
+            for (MoveInfo m : ip.listMovesInfo(connection)) {
             tbl.addRow(new Object[]
             {
                 m.getId(), m.getName(), m.getIdMoveCat(), m.getIdType(), m.getPower(),
                 m.getAccuracy(), m.getPp(), m.getEffect(), m.getEffectProb()
             });
-        }
-    }
-    /**
-     * Método en progreso que permite recibir un pokepaste en el txtPokepaste
-     * e importarlo al sistema para poder interactuar con él y poder subirlo
-     * a la base de datos.
-     * @param pokepaste 
-     */
-    private void setValuesFromPokepaste(String pokepaste) {
-        // Split the pokepaste into lines
-        String[] lines = pokepaste.split("\n");
-
-        // Parse the species and nickname if present
-        String speciesAndNickname = lines[0];
-        String[] speciesAndNicknameParts = speciesAndNickname.split(" @ ");
-        String species;
-        String nickname = "";
-        String item = ""; // Added item variable
-        if (speciesAndNicknameParts.length == 2) {
-            species = speciesAndNicknameParts[0].trim();
-            item = speciesAndNicknameParts[1].trim(); // Set item from the second part
-        } else {
-            species = speciesAndNickname.trim();
-        }
-
-        // Set the species, nickname, and item
-        cboSpecies.setSelectedItem(species);
-        txtNickname.setText(nickname);
-        cboItem.setSelectedItem(item); // Set the item
-
-        // Parse and set other values
-        for (String line : lines) {
-            if (line.startsWith("Ability: ")) {
-                cboAbility.setSelectedItem(line.substring("Ability: ".length()));
-            } else if (line.startsWith("Tera Type: ")) {
-                cboTeraType.setSelectedItem(line.substring("Tera Type: ".length()));
-            } else if (line.startsWith("Shiny: ")) {
-                ckbShiny.setSelected(line.endsWith("Yes"));
-            } else if (line.startsWith("EVs: ")) {
-                parseAndSetEVs(line.substring("EVs: ".length()));
-            } else if (line.endsWith(" Nature")) {
-                cboNature.setSelectedItem(line.replace(" Nature", ""));
-            } else if (line.startsWith("- ")) {
-                parseAndSetMove(line.substring(2));
             }
-        }
+            Conexion.getInstance().releaseConnection(connection);
+        // Use the itemList as needed
+        } catch (SQLException e) {
+            System.out.println(e);
+        } 
     }
+   
 
     /**
-     * Método que permite obtener los valores de los EVs del pokepaste.
-     * @param evLine 
-     */
-    private void parseAndSetEVs(String evLine) {
-        String[] evs = evLine.split(" / ");
-        for (String ev : evs) {
-            String[] evParts = ev.trim().split(" ");
-            int value = Integer.parseInt(evParts[0]);
-            String stat = evParts[1];
-            switch (stat) {
-                case "HP":
-                    sldHP.setValue(value);
-                    break;
-                case "Atk":
-                    sldATK.setValue(value);
-                    break;
-                case "Def":
-                    sldDEF.setValue(value);
-                    break;
-                case "SpA":
-                    sldSPATK.setValue(value);
-                    break;
-                case "SpDef":
-                    sldSPDEF.setValue(value);
-                    break;
-                case "Spe":
-                    sldSPD.setValue(value);
-                    break;
-                // Handle additional stats if needed
-            }
-        }
+    * Este método permite obtener la descripcion de un movimiento seleccionado.
+    * 
+    * @param cbo el combobox del cual se quiere sacar el movimiento.
+    * @return la descripcion en formato String.
+    */
+   private String getMoveDescription(JComboBox cbo) {
+       String description = "";
+       try {
+           Move move = matchMove(cbo);
+           if (move != null) {
+               description = move.getEffect();
+           }
+       } catch (NullPointerException e) {
+           // Handle the exception (e.g., log it or display an error message)
+           e.printStackTrace(); // Print the stack trace for debugging purposes
+       }
+       return description;
+   }
 
+   /**
+    * Este método permite obtener la descripcion del item seleccionado.
+    * 
+    * @return la descripcion del item.
+    */
+   private String getItemDescription() {
+       String description = "";
+       try {
+           Item item = matchItem();
+           if (item != null) {
+               description = item.getDescription();
+           }
+       } catch (NullPointerException e) {
+           e.printStackTrace();
+       }
+       return description;
+   }
 
-    }
-    
+   /**
+    * Este método permite obtener la descripcion de la habilidad seleccionada.
+    * 
+    * @return la descripcion de la habilidad.
+    */
+   private String getAbilityDescription() {
+       String description = "";
+       try {
+           Ability ability = matchAbility();
+           if (ability != null) {
+               description = ability.getDescription();
+           }
+       } catch (NullPointerException e) {
+           e.printStackTrace();
+       }
+       return description;
+   }
+
     /**
-     * Método que permite obtener los movimientos del pokepaste.
-     * @param move 
+     * Este método permite resetear todos los campos combobox para poder seleccionar
+     * nuevas opciones.
      */
-    private void parseAndSetMove(String move) {
-        // Determine which move slot to set based on the current state
-        
-        if (cboMove1.getSelectedItem().toString().isEmpty()) {
-            cboMove1.setSelectedItem(move);
-        } else if (cboMove2.getSelectedItem().toString().isEmpty()) {
-            cboMove2.setSelectedItem(move);
-        } else if (cboMove3.getSelectedItem().toString().isEmpty()) {
-            cboMove3.setSelectedItem(move);
-        } else if (cboMove4.getSelectedItem().toString().isEmpty()) {
-            cboMove4.setSelectedItem(move);
+    private void resetFields(){
+        String empty = "";
+        for (JComboBox cbo : listMoveCBOXS) {
+            cbo.setSelectedItem(empty);
         }
+        cboAbility.setSelectedItem(empty);
+        cboItem.setSelectedItem(empty);
+        cboSpecies.setSelectedItem(empty);
     }
     /**
-     * Este método permite obtener la descripcion de un movimiento seleccionado.
-     * @param cbo el combobox del cual se quiere sacar el movimiento.
-     * @return la descripcion en formato String.
-     */
-    private String getMoveDescription(JComboBox cbo ) {
-        Move move = matchMove(cbo);
-        String description = move.getEffect();
-        return description;
-    }
-    /**
-     * Este método permite obtener la descripcion del item seleccionado.
-     * @return la descripcion del item.0
-     */
-    private String getItemDescription() {
-        Item item = matchItem();
-        String description = item.getDescription();
-        return description;
-    }
-    /**
-     * Este método permite obtener la descripcion de la habilidad seleccionada.
+     * Este método permite obtener un pequeño ícono con la imagen de un Pokémon basado 
+     * en su nombre. Se obtiene el nombre del Pokémon seleccionado en la cboSpecies
+     * y se busca en la carpeta images del proyecto.
      * @return 
      */
-    private String getAbilityDescription() {
-        Ability ability = matchAbility();    
-        String description = ability.getDescription();
-        return description;
-    }
-    
-    private void resetFields(){
-        for (JComboBox cbo : listMoveCBOXS) {
-            cbo.setSelectedItem("");
-        }
-    }
-    
     private ImageIcon getPokemonSprite() {
         String selectedPokemon = cboSpecies.getSelectedItem().toString();
         ImageIcon sprite = new ImageIcon();
@@ -2032,17 +1952,177 @@ public class MainWindow extends javax.swing.JFrame implements IPokemonCalculator
 
         // Resize the image if needed
         Image img = sprite.getImage();
-        Image resizedImg = img.getScaledInstance(56,42, Image.SCALE_SMOOTH);
+        Image resizedImg = img.getScaledInstance(112,84, Image.SCALE_SMOOTH);
         sprite = new ImageIcon(resizedImg);
 
         return sprite;
     }
+     /**
+     * Método en progreso que permite recibir un pokepaste en el txtPokepaste
+     * e importarlo al sistema para poder interactuar con él y poder subirlo
+     * a la base de datos.
+     * @param pokepaste 
+     */
+    public void importPokepaste(String pokepaste) {
+        // Split the pokepaste string into lines
+        String[] lines = pokepaste.split("\n");
+
+        // Parse the species and nickname if present
+        String speciesAndNickname = lines[0];
+        String[] speciesAndNicknameParts = speciesAndNickname.split(" @ ");
+        String species;
+        String nickname = "";
+        String item = ""; // Added item variable
+     
+
+        if (speciesAndNicknameParts.length == 2) {
+            species = speciesAndNicknameParts[0].trim();
+
+            // Further split the speciesAndNicknameParts[0] to separate species and nickname
+            String[] speciesParts = speciesAndNicknameParts[0].trim().split("\\(");
+            if (speciesParts.length > 1) {
+                nickname = speciesParts[0].trim();
+                species = speciesParts[1].replace(")", "").trim();
+                
+
+            }
+
+            item = speciesAndNicknameParts[1].trim(); // Set item from the second part
+        } else {
+            species = speciesAndNickname.trim();
+        }
+
+        // Set the species, nickname, and item
+        cboSpecies.setSelectedItem(species);
+        txtNickname.setText(nickname);
+        cboItem.setSelectedItem(item); // Set the item
+        // Set gender radio buttons
+        // Extract gender information from the nickname
+
+        String genderLine = lines[0];
+        if (genderLine.contains("(M)")) {
+            rbnMale.setSelected(true);
+        } else if (genderLine.contains("(F)")) {
+            rbnFemale.setSelected(true);
+        } else {
+            rdnGenderless.setSelected(true);
+        }
+
+
+
+        // Process each line
+        for (String line : lines) {
+            if (line.startsWith("Ability:")) {
+                // Set ability combobox value
+                String ability = line.substring("Ability: ".length()).trim();
+                cboAbility.setSelectedItem(ability);
+            } else if (line.startsWith("Level:")) {
+                // Set level spinner value
+                String levelString = line.substring("Level: ".length()).trim();
+                int level = Integer.parseInt(levelString);
+                spnLevel.setValue(level);
+            } else if (line.startsWith("Shiny:")) {
+                // Set shiny checkbox value
+                boolean isShiny = line.endsWith("Yes");
+                ckbShiny.setSelected(isShiny);
+             } else if (line.startsWith("Tera Type:")) {
+                // Set tera type combobox value
+                String teraType = line.substring("Tera Type: ".length()).trim();
+                cboTeraType.setSelectedItem(teraType);
+            } else if (line.startsWith("EVs:")) {
+                // Set EV sliders
+                // Parse and set values for HP, Atk, Def, SpA, SpDef, and Spe
+                // Example: EVs: 252 HP / 252 Atk / 4 Def
+                String evLine = line.substring("EVs: ".length());
+                String[] evValues = evLine.split(" / ");
+                for (String ev : evValues) {
+                    String[] parts = ev.trim().split(" ");
+                    int value = Integer.parseInt(parts[0]);
+                    String stat = parts[1];
+                    switch (stat) {
+                        case "HP":
+                            sldHP.setValue(value);
+                            break;
+                        case "Atk":
+                            sldATK.setValue(value);
+                            break;
+                        case "Def":
+                            sldDEF.setValue(value);
+                            break;
+                        case "SpA":
+                            sldSPATK.setValue(value);
+                            break;
+                        case "SpDef":
+                            sldSPDEF.setValue(value);
+                            break;
+                        case "Spe":
+                            sldSPD.setValue(value);
+                            break;
+                        default:
+                            // Handle unknown stat
+                            break;
+                    }
+                }
+            } else if (line.contains(" Nature")) {
+                // Set nature combobox value
+                String natureLine = line.replace("Nature", "").trim();
+                String[] parts = natureLine.split("\\s+");
+                if (parts.length > 0) {
+                    String nature = parts[parts.length - 1];
+                    cboNature.setSelectedItem(nature);
+                }
+
+
+            } else if (line.startsWith("IVs:")) {
+                // Set IV spinners
+                // Parse and set values for HP, Atk, Def, SpA, SpDef, and Spe
+                // Example: IVs: 31 HP / 31 Atk / 31 Def
+                String ivLine = line.substring("IVs: ".length());
+                String[] ivValues = ivLine.split(" / ");
+                for (String iv : ivValues) {
+                    String[] parts = iv.trim().split(" ");
+                    int value = Integer.parseInt(parts[0]);
+                    String stat = parts[1];
+                    switch (stat) {
+                        case "HP":
+                            spnIVHP.setValue(value);
+                            break;
+                        case "Atk":
+                            spnIVATK.setValue(value);
+                            break;
+                        case "Def":
+                            spnIVDEF.setValue(value);
+                            break;
+                        case "SpA":
+                            spnIVSPATK.setValue(value);
+                            break;
+                        case "SpDef":
+                            spnIVSPDEF.setValue(value);
+                            break;
+                        case "Spe":
+                            spnIVSPD.setValue(value);
+                            break;
+                        default:
+                            // Handle unknown stat
+                            break;
+                    }
+                }
+            } else if (line.startsWith("- ")) {
+                // Set move combobox values
+                String move = line.substring(2).trim();
+                // Check which move slot (1, 2, 3, 4) and set the corresponding combobox
+                if (cboMove1.getSelectedItem().toString().isEmpty()) {
+                    cboMove1.setSelectedItem(move);
+                } else if (cboMove2.getSelectedItem().toString().isEmpty()) {
+                    cboMove2.setSelectedItem(move);
+                } else if (cboMove3.getSelectedItem().toString().isEmpty()) {
+                    cboMove3.setSelectedItem(move);
+                } else if (cboMove4.getSelectedItem().toString().isEmpty()) {
+                    cboMove4.setSelectedItem(move);
+                }
+            // Add more conditions for other lines as needed
+        }
+    }
+
+    }  
 }
-
-
-    
-    
-
-
-
-
